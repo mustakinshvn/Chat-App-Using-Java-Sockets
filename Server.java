@@ -47,7 +47,34 @@ public class Server {
          });
 
 
+         sender.start();
 
+
+        //Recieve thread : it contains the code the server will use to recieve messages from client
+
+         Thread receiver = new Thread(new Runnable() {
+            String msg;
+
+            @Override
+            public void run(){
+                try{
+                    msg= sc.nextLine();
+                while(msg!=null){
+                    System.out.println("Server : " +msg);
+                    msg= in.readLine();
+                }
+                System.out.println("Server is out of Service");
+                out.close();
+                clientSocket.close();
+                }catch(IOException e){
+                    e.printStackTrace();
+                }
+
+            }
+         });
+
+
+         receiver.start();
    
         }catch(IOException e){
             e.printStackTrace();

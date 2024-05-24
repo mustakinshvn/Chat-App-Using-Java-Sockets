@@ -13,7 +13,9 @@ public class Server {
         final Socket clientSocket;      //Sockets enable applications to send and receive data over a network, such as the internet.
 
         final BufferedReader in;
-        final PrintWriter out;
+
+        final PrintWriter out;  //used in the context of socket programming to send data to a server or a client.
+
         final Scanner sc= new Scanner(System.in);
 
 
@@ -23,6 +25,8 @@ public class Server {
 
             clientSocket = serverSocket.accept();   //It blocks the execution of the program until a client connects.
             
+            out = new PrintWriter(clientSocket.getOutputStream());  //responsible for sending data to the client.
+
     
         }catch(IOException e){
             e.printStackTrace();

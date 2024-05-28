@@ -7,57 +7,46 @@ import java.util.Scanner;
 
 public class Client {
     public static void main(String[] args) {
-        final Socket clienSocket; //socket used by client to and and recieve data from server
+        final Socket clientSocket; // socket used by client to send and receive data from the server
+        final BufferedReader in; // object to read data from the server
+        final PrintWriter out; // object to write data into the socket
+        final Scanner sc = new Scanner(System.in); // object to read data from users (Keyboard)
 
-        final BufferedReader in; //object to read data from server
+        try {
+            clientSocket = new Socket("127.0.0.1", 5000); // Connect to the server at localhost on port 5000
+            System.out.println("Connected to the server!");
 
-        final PrintWriter out; //object to write data into socket
+            out = new PrintWriter(clientSocket.getOutputStream(), true); // Set auto-flush to true
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-        final Scanner sc= new Scanner(System.in); //object to read data from users (Keyboard)
-
-        try{
-            clienSocket = new Socket("177.0.0.1", 5000);
-            out= new PrintWriter(clienSocket.getOutputStream());
-            in = new BufferedReader(new InputStreamReader(clienSocket.getInputStream()));
-
-            Thread sender = new Thread(new Runnable() {
-                String msg;
-
-                @Override
-                public void run() {
-                    while (true) {
-                        msg= sc.nextLine();
-                        out.println(msg);
-                        out.flush();
-                    }
+            Thread sender = new Thread(() -> {
+                while (true) {
+                    String msg = sc.nextLine();
+                    out.println(msg);
+                    out.flush();
                 }
             });
 
             sender.start();
 
-            Thread receiver = new Thread(new Runnable() {
-                String msg;
-
-                @Override
-                public void run() {
-                   try{
-                    msg= sc.nextLine();
-                    while (msg!=null) {
-                        System.out.println("Server : " +msg );
-                        out.close();
-                        clienSocket.close();
+            Thread receiver = new Thread(() -> {
+                try {
+                    String msg = in.readLine();
+                    while (msg != null) {
+                        System.out.println("Server: " + msg);
+                        msg = in.readLine();
                     }
-                   } catch(IOException e){
+                    System.out.println("Server disconnected.");
+                    out.close();
+                    clientSocket.close();
+                } catch (IOException e) {
                     e.printStackTrace();
-                   }
                 }
-                
             });
 
             receiver.start();
 
-
-        }catch(IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

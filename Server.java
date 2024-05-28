@@ -17,7 +17,7 @@ public class Server {
 
         final PrintWriter out;  //used in the context of socket programming to send data to a server or a client.
 
-        final Scanner sc= new Scanner(System.in);
+        final Scanner sc = new Scanner(System.in);
 
 
         try{
@@ -80,13 +80,6 @@ public class Server {
             e.printStackTrace();
             
         }
-
-
-     
-
-
-
-
     }
     }
 

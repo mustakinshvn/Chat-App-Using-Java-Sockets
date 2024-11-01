@@ -55,7 +55,9 @@ public class Server {
                 }
             } catch (IOException e) {
                 System.out.println("Error handling client: " + e.getMessage());
-            } 
+            } finally {
+                disconnect();
+            }
         }
 
         private void broadcastMessage(String message) {
@@ -66,6 +68,20 @@ public class Server {
                         client.out.println(message);
                     }
                 }
+            }
+        }
+
+        private void disconnect() {
+            try {
+                clients.remove(this);
+                if (clientName != null) {
+                    broadcastMessage(clientName + " has left the chat.");
+                }
+                if (in != null) in.close();
+                if (out != null) out.close();
+                if (socket != null) socket.close();
+            } catch (IOException e) {
+                System.out.println("Error disconnecting client: " + e.getMessage());
             }
         }
 

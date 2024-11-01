@@ -42,12 +42,27 @@ public class Client {
                     }
                 } catch (IOException e) {
                     System.out.println("Disconnected from server.");
-                } 
+                } finally {
+                    closeConnection(clientSocket, in, out, sc);
+                }
             });
             receiver.start();
 
         } catch (IOException e) {
             System.out.println("Unable to connect.");
+        }
+    }
+
+    // Close resources method
+    private static void closeConnection(Socket socket, BufferedReader in, PrintWriter out, Scanner sc) {
+        try {
+            if (socket != null && !socket.isClosed()) socket.close();
+            if (in != null) in.close();
+            if (out != null) out.close();
+            if (sc != null) sc.close();
+            System.out.println("Connection closed.");
+        } catch (IOException e) {
+            System.out.println("Error closing resources.");
         }
     }
 

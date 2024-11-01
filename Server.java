@@ -3,9 +3,11 @@ import java.net.*;
 import java.util.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
 public class Server {
     private static final int PORT = 5000;
     private static Set<ClientHandler> clients = Collections.synchronizedSet(new HashSet<>()); // thread-safe set to store connected clients
+    private static Map<String, ClientHandler> clientsByName = Collections.synchronizedMap(new HashMap<>()); // map to store clients by name
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
@@ -43,10 +45,11 @@ public class Server {
             try {
                 // getting client name
                 clientName = in.readLine();
+                clientsByName.put(clientName, this);
                 broadcastMessage(clientName + " has joined the chat!");
                 System.out.println(clientName + " connected from " + socket.getInetAddress());
 
-                
+
                 sendOnlineUsers(); // Send current online users list to the new client
                
 
@@ -57,7 +60,10 @@ public class Server {
                         break;
                     }else if (message.equals("/online")) {
                         sendOnlineUsers();
-                    } else {
+                    } else if(message.startsWith("/pm ")){
+                        handlePrivateMessage(message);
+
+                    }else {
                         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
                         broadcastMessage("[" + timestamp + "] " + message);
                     }
@@ -68,6 +74,40 @@ public class Server {
                 disconnect();
             }
         }
+
+
+        private void handlePrivateMessage(String message) {
+            // Format: /pm username message
+            try {
+                String[] parts = message.split(" ", 3);
+                if (parts.length < 3) {
+                    out.println("Invalid private message format. Use: /pm username message");
+                    return;
+                }
+
+                String targetUsername = parts[1];
+                String pmMessage = parts[2];
+                ClientHandler targetClient = clientsByName.get(targetUsername);
+
+                if (targetClient == null) {
+                    out.println("Error: User '" + targetUsername + "' is not online.");
+                    return;
+                }
+
+                // Send to recipient
+                String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                String formattedMessage = String.format("[%s] [PM from %s]: %s", timestamp, clientName, pmMessage);
+                targetClient.out.println(formattedMessage);
+
+                // Send confirmation to sender
+                String confirmationMessage = String.format("[%s] [PM to %s]: %s", timestamp, targetUsername, pmMessage);
+                out.println(confirmationMessage);
+
+            } catch (Exception e) {
+                out.println("Error sending private message: " + e.getMessage());
+            }
+        }
+
 
         private void sendOnlineUsers() {
             StringBuilder userList = new StringBuilder("\n=== Online Users ===\n");

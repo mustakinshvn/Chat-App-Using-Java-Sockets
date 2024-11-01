@@ -29,12 +29,15 @@ public class Client {
             System.out.println("Available commands:");
             System.out.println("/online - Show online users");
             System.out.println("/quit - Exit the chat");
+            System.out.println("/pm <username> <message> - Send a private message to a user");
 
             // Thread for sending messages
             Thread sender = new Thread(() -> {
                 while (!clientSocket.isClosed()) {
                     String msg = sc.nextLine();
-                    if (msg.equals("/online")) {
+                    if(msg.startsWith("/pm ")) {
+                        out.println(msg);
+                    }else if (msg.equals("/online")) {
                         out.println("/online");
                     } else {
                         out.println(clientName + ": " + msg);
@@ -80,5 +83,4 @@ public class Client {
         }
     }
 
-   
 }

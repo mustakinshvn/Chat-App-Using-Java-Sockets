@@ -1,6 +1,8 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 public class Server {
     private static final int PORT = 5000;
     private static Set<ClientHandler> clients = Collections.synchronizedSet(new HashSet<>()); // thread-safe set to store connected clients
@@ -44,14 +46,21 @@ public class Server {
                 broadcastMessage(clientName + " has joined the chat!");
                 System.out.println(clientName + " connected from " + socket.getInetAddress());
 
+                
+                sendOnlineUsers(); // Send current online users list to the new client
+               
+
                 // handle client msgs
                 String message;
                 while ((message = in.readLine()) != null) {
                     if (message.equalsIgnoreCase("/quit")) {
                         break;
+                    }else if (message.equals("/online")) {
+                        sendOnlineUsers();
+                    } else {
+                        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                        broadcastMessage("[" + timestamp + "] " + message);
                     }
-                  
-                    broadcastMessage( clientName + ": " + message);
                 }
             } catch (IOException e) {
                 System.out.println("Error handling client: " + e.getMessage());
@@ -59,6 +68,20 @@ public class Server {
                 disconnect();
             }
         }
+
+        private void sendOnlineUsers() {
+            StringBuilder userList = new StringBuilder("\n=== Online Users ===\n");
+            synchronized (clients) {
+                for (ClientHandler client : clients) {
+                    userList.append("- ").append(client.clientName).append("\n");
+                }
+            }
+            userList.append("=================");
+            out.println(userList.toString());
+        }
+        
+
+
 
         private void broadcastMessage(String message) {
             System.out.println(message); 

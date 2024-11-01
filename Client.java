@@ -7,10 +7,10 @@ import java.util.Scanner;
 
 public class Client {
     public static void main(String[] args) {
-        final Socket clientSocket; // socket used by client to send and receive data from the server
+        Socket clientSocket; // socket used by client to send and receive data from the server
         final BufferedReader in; // object to read data from the server
         final PrintWriter out; // object to write data into the socket
-        final Scanner sc = new Scanner(System.in); // object to read data from users (Keyboa
+        final Scanner sc = new Scanner(System.in); // object to read data from users (Keyboard)
 
         try {
             clientSocket = new Socket("127.0.0.1", 5000); // connect to server
@@ -24,11 +24,25 @@ public class Client {
             String clientName = sc.nextLine();
             out.println(clientName);
 
+
+            // Print commands help
+            System.out.println("Available commands:");
+            System.out.println("/online - Show online users");
+            System.out.println("/quit - Exit the chat");
+
             // Thread for sending messages
             Thread sender = new Thread(() -> {
                 while (!clientSocket.isClosed()) {
                     String msg = sc.nextLine();
-                    out.println(clientName + ": " + msg); // prefix message with client's name
+                    if (msg.equals("/online")) {
+                        out.println("/online");
+                    } else {
+                        out.println(clientName + ": " + msg);
+                    }
+                    
+                    if (msg.equalsIgnoreCase("/quit")) {
+                        break;
+                    }
                 }
             });
             sender.start();

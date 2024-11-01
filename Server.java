@@ -1,69 +1,74 @@
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.Vector;
-
-public class Server implements Runnable {
-    
-      Socket socket;
-
-      public static Vector clients = new Vector();
-
-      public Server (Socket socket){
-        try {
-            this.socket=socket;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-      }
-
-      public void run(){
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            clients.add(writer);
-              
-            while (true) {
-                String msg= reader.readLine().trim();
-                System.out.println("Received message : "+ msg);
-
-                for(int i=0; i<clients.size(); i++){
-                    BufferedWriter bw = (BufferedWriter) clients.get(i);
-                    bw.write(msg);
-                    bw.write("\r\n");
-                    bw.flush();
-                }
-            }
-
-        } catch (Exception e) {
-           e.printStackTrace();
-        }
-      }
-
-
-      
+import java.io.*;
+import java.net.*;
+import java.util.*;
+public class Server {
+    private static final int PORT = 5000;
+    private static Set<ClientHandler> clients = Collections.synchronizedSet(new HashSet<>()); // thread-safe set to store connected clients
 
     public static void main(String[] args) {
-     
-
-        try {
-            ServerSocket serverSocket = new ServerSocket(5000); // Create a ServerSocket bound to port 5000
-          
-            System.out.println("Server is running and waiting for client connections on port 5000...");
-
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+            System.out.println("Server started on port " + PORT);
+            
             while (true) {
-                Socket clientSocket = serverSocket.accept(); // It blocks the execution of the program until a client connects.
-              
-               Server server = new Server(clientSocket);    
-                
+                Socket clientSocket = serverSocket.accept();
+                ClientHandler clientHandler = new ClientHandler(clientSocket); // create a new client handler for the client
+                clients.add(clientHandler);
+                new Thread(clientHandler).start();
             }
-
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Server error: " + e.getMessage());
         }
+    }
+
+    static class ClientHandler implements Runnable {
+        private Socket socket;
+        private BufferedReader in;
+        private PrintWriter out;
+        private String clientName;
+       
+        public ClientHandler(Socket socket) {
+            this.socket = socket;
+            try {
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                out = new PrintWriter(socket.getOutputStream(), true);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void run() {
+            try {
+                // getting client name
+                clientName = in.readLine();
+                broadcastMessage(clientName + " has joined the chat!");
+                System.out.println(clientName + " connected from " + socket.getInetAddress());
+
+                // handle client msgs
+                String message;
+                while ((message = in.readLine()) != null) {
+                    if (message.equalsIgnoreCase("/quit")) {
+                        break;
+                    }
+                  
+                    broadcastMessage( clientName + ": " + message);
+                }
+            } catch (IOException e) {
+                System.out.println("Error handling client: " + e.getMessage());
+            } 
+        }
+
+        private void broadcastMessage(String message) {
+            System.out.println(message); 
+            synchronized (clients) {
+                for (ClientHandler client : clients) {
+                    if (client != this) { // Don't send message back to sender
+                        client.out.println(message);
+                    }
+                }
+            }
+        }
+
+
     }
 }
